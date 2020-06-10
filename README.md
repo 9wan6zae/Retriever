@@ -2,10 +2,11 @@
 **Team No.**<br/>
 &nbsp;&nbsp;24
 
-**Team Name** Retriever
+**Team Name**<br/>
+&nbsp;&nbsp;Retriever
 
 **Team Members**<br/>
-|이름|학번|
+&nbsp;&nbsp;|이름|학번|
 |:----------:|:----------:|
 |한광재|201524615|
 |송동욱|201424475|
