@@ -1,6 +1,6 @@
 # 2020 부산대학교 전기 졸업과제
 **Team No.**<br/>
- 24
+&nbsp;24
 
 **Team Name** Retriever
 
