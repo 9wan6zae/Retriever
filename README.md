@@ -5,7 +5,7 @@
 **Team Name**<br/>
 &nbsp;&nbsp;Retriever
 
-**Team Members**<br/>&nbsp;
+**Team Members**<br/>
 |이름|학번|
 |:----------:|:----------:|
 |한광재|201524615|
