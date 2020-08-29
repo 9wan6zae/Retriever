@@ -30,8 +30,16 @@ import android.os.SystemClock;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.MotionEvent;
 import android.view.Surface;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.ar.core.Camera;
+import com.google.ar.core.Frame;
+import com.google.ar.core.HitResult;
+import com.google.ar.core.TrackingState;
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +50,10 @@ import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
+import com.google.ar.core.examples.java.common.helpers.TapHelper;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -56,7 +68,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   // Graphs and models downloaded from http://pjreddie.com/darknet/yolo/ may be converted e.g. via
   // DarkFlow (https://github.com/thtrieu/darkflow). Sample command:
   // ./flow --model cfg/tiny-yolo-voc.cfg --load bin/tiny-yolo-voc.weights --savepb --verbalise
-  private static final String YOLO_MODEL_FILE = "file:///android_asset/test-tiny-yolo-4c.pb";
+  //private static final String YOLO_MODEL_FILE = "file:///android_asset/test-tiny-yolo-4c.pb";
+  private static final String YOLO_MODEL_FILE = "file:///android_asset/tiny-yolo-voc-graph.pb";
   private static final int YOLO_INPUT_SIZE = 416;
   private static final String YOLO_INPUT_NAME = "input";
   private static final String YOLO_OUTPUT_NAMES = "output";
@@ -276,6 +289,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
           }
         });
   }
+
+  /*
+  @Override
+  protected void setDistance(float distance){
+    TextView textView = findViewById(R.id.textView);
+    textView.setText("distance : " + distance);
+  }
+  */
 
   @Override
   protected int getLayoutId() {

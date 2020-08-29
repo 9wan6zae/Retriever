@@ -21,13 +21,12 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
-import android.media.Image.Plane;
+//import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.Build;
@@ -44,13 +43,48 @@ import java.nio.ByteBuffer;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
-
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.widget.Toast;
+import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Camera;
+import com.google.ar.core.Config;
+import com.google.ar.core.Coordinates2d;
+import com.google.ar.core.Frame;
+import com.google.ar.core.HitResult;
+import com.google.ar.core.Plane;
+import com.google.ar.core.PointCloud;
+import com.google.ar.core.Session;
+import com.google.ar.core.TrackingState;
+import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
+import com.google.ar.core.examples.java.common.helpers.DepthSettings;
+import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
+import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
+import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
+import com.google.ar.core.examples.java.common.helpers.TapHelper;
+import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
+import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
+import com.google.ar.core.examples.java.common.rendering.PlaneRenderer;
+import com.google.ar.core.examples.java.common.rendering.PointCloudRenderer;
+import com.google.ar.core.examples.java.common.rendering.Texture;
+import com.google.ar.core.exceptions.CameraNotAvailableException;
+import com.google.ar.core.exceptions.UnavailableApkTooOldException;
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+import java.io.IOException;
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
 public abstract class CameraActivity extends Activity
-    implements OnImageAvailableListener, Camera.PreviewCallback {
+        implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
 
-  private static final int PERMISSIONS_REQUEST = 1;
+  private static final int PERMISSIONS_REQUEST = 0;
 
   private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
   private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -79,10 +113,10 @@ public abstract class CameraActivity extends Activity
 
     setContentView(R.layout.activity_camera);
 
-    if (hasPermission()) {
+    if (CameraPermissionHelper.hasCameraPermission(this)) {
       setFragment();
     } else {
-      requestPermission();
+      CameraPermissionHelper.requestCameraPermission(this);
     }
   }
 
@@ -101,53 +135,6 @@ public abstract class CameraActivity extends Activity
     return yuvBytes[0];
   }
 
-  /**
-   * Callback for android.hardware.Camera API
-   */
-  @Override
-  public void onPreviewFrame(final byte[] bytes, final Camera camera) {
-    if (isProcessingFrame) {
-      LOGGER.w("Dropping frame!");
-      return;
-    }
-
-    try {
-      // Initialize the storage bitmaps once when the resolution is known.
-      if (rgbBytes == null) {
-        Camera.Size previewSize = camera.getParameters().getPreviewSize();
-        previewHeight = previewSize.height;
-        previewWidth = previewSize.width;
-        rgbBytes = new int[previewWidth * previewHeight];
-        onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90);
-      }
-    } catch (final Exception e) {
-      LOGGER.e(e, "Exception!");
-      return;
-    }
-
-    isProcessingFrame = true;
-    lastPreviewFrame = bytes;
-    yuvBytes[0] = bytes;
-    yRowStride = previewWidth;
-
-    imageConverter =
-        new Runnable() {
-          @Override
-          public void run() {
-            ImageUtils.convertYUV420SPToARGB8888(bytes, previewWidth, previewHeight, rgbBytes);
-          }
-        };
-
-    postInferenceCallback =
-        new Runnable() {
-          @Override
-          public void run() {
-            camera.addCallbackBuffer(bytes);
-            isProcessingFrame = false;
-          }
-        };
-    processImage();
-  }
 
   /**
    * Callback for Camera2 API
@@ -174,37 +161,37 @@ public abstract class CameraActivity extends Activity
       }
       isProcessingFrame = true;
       Trace.beginSection("imageAvailable");
-      final Plane[] planes = image.getPlanes();
+      final android.media.Image.Plane[] planes = image.getPlanes();
       fillBytes(planes, yuvBytes);
       yRowStride = planes[0].getRowStride();
       final int uvRowStride = planes[1].getRowStride();
       final int uvPixelStride = planes[1].getPixelStride();
 
       imageConverter =
-          new Runnable() {
-            @Override
-            public void run() {
-              ImageUtils.convertYUV420ToARGB8888(
-                  yuvBytes[0],
-                  yuvBytes[1],
-                  yuvBytes[2],
-                  previewWidth,
-                  previewHeight,
-                  yRowStride,
-                  uvRowStride,
-                  uvPixelStride,
-                  rgbBytes);
-            }
-          };
+              new Runnable() {
+                @Override
+                public void run() {
+                  ImageUtils.convertYUV420ToARGB8888(
+                          yuvBytes[0],
+                          yuvBytes[1],
+                          yuvBytes[2],
+                          previewWidth,
+                          previewHeight,
+                          yRowStride,
+                          uvRowStride,
+                          uvPixelStride,
+                          rgbBytes);
+                }
+              };
 
       postInferenceCallback =
-          new Runnable() {
-            @Override
-            public void run() {
-              image.close();
-              isProcessingFrame = false;
-            }
-          };
+              new Runnable() {
+                @Override
+                public void run() {
+                  image.close();
+                  isProcessingFrame = false;
+                }
+              };
 
       processImage();
     } catch (final Exception e) {
@@ -272,41 +259,21 @@ public abstract class CameraActivity extends Activity
 
   @Override
   public void onRequestPermissionsResult(
-      final int requestCode, final String[] permissions, final int[] grantResults) {
+          final int requestCode, final String[] permissions, final int[] grantResults) {
     if (requestCode == PERMISSIONS_REQUEST) {
       if (grantResults.length > 0
-          && grantResults[0] == PackageManager.PERMISSION_GRANTED
-          && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+              && grantResults[0] == PackageManager.PERMISSION_GRANTED
+              && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
         setFragment();
       } else {
-        requestPermission();
+        CameraPermissionHelper.requestCameraPermission(this);
       }
-    }
-  }
-
-  private boolean hasPermission() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      return checkSelfPermission(PERMISSION_CAMERA) == PackageManager.PERMISSION_GRANTED &&
-          checkSelfPermission(PERMISSION_STORAGE) == PackageManager.PERMISSION_GRANTED;
-    } else {
-      return true;
-    }
-  }
-
-  private void requestPermission() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (shouldShowRequestPermissionRationale(PERMISSION_CAMERA) ||
-          shouldShowRequestPermissionRationale(PERMISSION_STORAGE)) {
-        Toast.makeText(CameraActivity.this,
-            "Camera AND storage permission are required for this demo", Toast.LENGTH_LONG).show();
-      }
-      requestPermissions(new String[] {PERMISSION_CAMERA, PERMISSION_STORAGE}, PERMISSIONS_REQUEST);
     }
   }
 
   // Returns true if the device supports the required hardware level, or better.
   private boolean isHardwareLevelSupported(
-      CameraCharacteristics characteristics, int requiredLevel) {
+          CameraCharacteristics characteristics, int requiredLevel) {
     int deviceLevel = characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
     if (deviceLevel == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
       return requiredLevel == deviceLevel;
@@ -328,7 +295,7 @@ public abstract class CameraActivity extends Activity
         }
 
         final StreamConfigurationMap map =
-            characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
         if (map == null) {
           continue;
@@ -338,8 +305,8 @@ public abstract class CameraActivity extends Activity
         // This should help with legacy situations where using the camera2 API causes
         // distorted or otherwise broken previews.
         useCamera2API = (facing == CameraCharacteristics.LENS_FACING_EXTERNAL)
-            || isHardwareLevelSupported(characteristics, 
-                                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL);
+                || isHardwareLevelSupported(characteristics,
+                CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL);
         LOGGER.i("Camera API lv2?: %s", useCamera2API);
         return cameraId;
       }
@@ -358,35 +325,31 @@ public abstract class CameraActivity extends Activity
     }
 
     Fragment fragment;
-    if (useCamera2API) {
-      CameraConnectionFragment camera2Fragment =
-          CameraConnectionFragment.newInstance(
-              new CameraConnectionFragment.ConnectionCallback() {
-                @Override
-                public void onPreviewSizeChosen(final Size size, final int rotation) {
-                  previewHeight = size.getHeight();
-                  previewWidth = size.getWidth();
-                  CameraActivity.this.onPreviewSizeChosen(size, rotation);
-                }
-              },
-              this,
-              getLayoutId(), //camera_connection_fragment_tracking
-              getDesiredPreviewFrameSize());
+
+    CameraConnectionFragment camera2Fragment =
+            CameraConnectionFragment.newInstance(
+                    new CameraConnectionFragment.ConnectionCallback() {
+                      @Override
+                      public void onPreviewSizeChosen(final Size size, final int rotation) {
+                        previewHeight = size.getHeight();
+                        previewWidth = size.getWidth();
+                        CameraActivity.this.onPreviewSizeChosen(size, rotation);
+                      }},
+                    this,
+                    getLayoutId(),
+                    getDesiredPreviewFrameSize());
 
       camera2Fragment.setCamera(cameraId);
       fragment = camera2Fragment;
-    } else {
-      fragment =
-          new LegacyCameraConnectionFragment(this, getLayoutId(), getDesiredPreviewFrameSize());
-    }
+
 
     getFragmentManager()
-        .beginTransaction()
-        .replace(R.id.container, fragment)
-        .commit();
+            .beginTransaction()
+            .replace(R.id.container, fragment)
+            .commit();
   }
 
-  protected void fillBytes(final Plane[] planes, final byte[][] yuvBytes) {
+  protected void fillBytes(final android.media.Image.Plane[] planes, final byte[][] yuvBytes) {
     // Because of the variable row stride it's not possible to know in
     // advance the actual necessary dimensions of the yuv planes.
     for (int i = 0; i < planes.length; ++i) {

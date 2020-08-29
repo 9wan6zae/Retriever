@@ -33,4 +33,18 @@
           android:id="@+id/debug_overlay"
           android:layout_width="match_parent"
           android:layout_height="match_parent"/>
+
+      <android.opengl.GLSurfaceView
+          android:id="@+id/surfaceview"
+          android:layout_width="fill_parent"
+          android:layout_height="fill_parent"
+          android:layout_gravity="top"/>
+
+      <TextView
+          android:id="@+id/textView"
+          android:layout_width="match_parent"
+          android:layout_height="46dp"
+          android:text="TextView"
+          android:textStyle="bold"
+          tools:text="distance" />
 </FrameLayout>

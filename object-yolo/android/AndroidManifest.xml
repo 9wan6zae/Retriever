@@ -31,7 +31,7 @@
         android:icon="@drawable/ic_launcher"
         android:theme="@style/MaterialTheme"
         android:banner="@drawable/ic_launcher">
-
+        <meta-data android:name="com.google.ar.core" android:value="required" />
         <activity android:name="org.tensorflow.demo.DetectorActivity"
                   android:screenOrientation="portrait"
                   android:label="@string/activity_name_detection">
@@ -40,7 +40,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
-            <meta-data android:name="com.google.ar.core" android:value="required" />
         </activity>
 
     </application>
