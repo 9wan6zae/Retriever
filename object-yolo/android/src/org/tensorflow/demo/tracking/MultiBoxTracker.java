@@ -190,6 +190,12 @@ public class MultiBoxTracker {
               ? String.format("%s %.2f", recognition.title, recognition.detectionConfidence)
               : String.format("%.2f", recognition.detectionConfidence);
       borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
+
+      float middlePointX = trackedPos.left + trackedPos.width() / 2;
+      float middlePointY = trackedPos.top + trackedPos.height() / 2;
+      canvas.drawPoint(middlePointX, middlePointY, boxPaint);
+
+      System.out.println("x: " + middlePointX + ", y: " + middlePointY);
     }
   }
 
