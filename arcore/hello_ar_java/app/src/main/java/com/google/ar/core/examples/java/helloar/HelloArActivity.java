@@ -65,8 +65,12 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Locale;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+import android.speech.tts.TextToSpeech;
+import static android.speech.tts.TextToSpeech.ERROR;
 
 
 /**
@@ -95,12 +99,24 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   private boolean calculateUVTransform = true;
 
   private final DepthSettings depthSettings = new DepthSettings();
+  private TextToSpeech tts;
 
   private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+
+    tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+      @Override
+      public void onInit(int status) {
+        if(status != ERROR) {
+          // 언어를 선택한다.
+          tts.setLanguage(Locale.KOREAN);
+        }
+      }
+    });
+
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
@@ -121,6 +137,17 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     calculateUVTransform = true;
 
     depthSettings.onCreate(this);
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    // TTS 객체가 남아있다면 실행을 중지하고 메모리에서 제거한다.
+    if(tts != null){
+      tts.stop();
+      tts.shutdown();
+      tts = null;
+    }
   }
 
   @Override
@@ -341,6 +368,8 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         System.out.println("-----------------------------");
         System.out.println("distance: " + hit.getDistance());
         System.out.println("-----------------------------");
+        String distance = "거리는 " + hit.getDistance() + "입니다.";
+        tts.speak(distance,TextToSpeech.QUEUE_FLUSH, null);
       }
     }
   }
