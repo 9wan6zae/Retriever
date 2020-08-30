@@ -50,6 +50,10 @@ import org.tensorflow.demo.R; // Explicit import needed for internal Google buil
 public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
 
+  private static final int TF_OD_API_INPUT_SIZE = 300;
+  private static final String TF_OD_API_MODEL_FILE =
+          "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
+  private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
 
   // Configuration values for tiny-yolo-voc. Note that the graph is not included with TensorFlow and
   // must be manually placed in the assets/ directory by the user.
@@ -113,15 +117,29 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     tracker = new MultiBoxTracker(this);
 
-    detector =
-            TensorFlowYoloDetector.create(
-                    getAssets(),
-                    YOLO_MODEL_FILE,
-                    YOLO_INPUT_SIZE,
-                    YOLO_INPUT_NAME,
-                    YOLO_OUTPUT_NAMES,
-                    YOLO_BLOCK_SIZE);
-    int cropSize = YOLO_INPUT_SIZE;
+    int cropSize = TF_OD_API_INPUT_SIZE;
+
+//    detector =
+//            TensorFlowYoloDetector.create(
+//                    getAssets(),
+//                    YOLO_MODEL_FILE,
+//                    YOLO_INPUT_SIZE,
+//                    YOLO_INPUT_NAME,
+//                    YOLO_OUTPUT_NAMES,
+//                    YOLO_BLOCK_SIZE);
+//    int cropSize = YOLO_INPUT_SIZE;
+    try {
+      detector = TensorFlowObjectDetectionAPIModel.create(
+              getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+      cropSize = TF_OD_API_INPUT_SIZE;
+    } catch (final IOException e) {
+      LOGGER.e(e, "Exception initializing classifier!");
+      Toast toast =
+              Toast.makeText(
+                      getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
+      toast.show();
+      finish();
+    }
 
     previewWidth = size.getWidth();
     previewHeight = size.getHeight();

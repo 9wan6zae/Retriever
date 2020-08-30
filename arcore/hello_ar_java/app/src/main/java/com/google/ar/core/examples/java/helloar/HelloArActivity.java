@@ -365,6 +365,9 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     MotionEvent tap = tapHelper.poll();
     if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
       for (HitResult hit : frame.hitTest(tap)) {
+        System.out.println("x: " + hit.getHitPose().tx());
+        System.out.println("y: " + hit.getHitPose().ty());
+        System.out.println("z: " + hit.getHitPose().tz());
         System.out.println("-----------------------------");
         System.out.println("distance: " + hit.getDistance());
         System.out.println("-----------------------------");
