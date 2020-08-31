@@ -16,34 +16,31 @@
 
 package com.google.ar.core.examples.java.helloar;
 
-import android.content.DialogInterface;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
-import com.google.ar.core.Anchor;
+
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
-import com.google.ar.core.CameraConfig;
 import com.google.ar.core.Config;
 import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.Point;
-import com.google.ar.core.Point.OrientationMode;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Session;
-import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DepthSettings;
@@ -63,10 +60,10 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
-import java.nio.IntBuffer;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
+import javax.crypto.Cipher;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import android.speech.tts.TextToSpeech;
@@ -78,11 +75,13 @@ import static android.speech.tts.TextToSpeech.ERROR;
  * ARCore API. The application will display any detected planes and will allow the user to tap on a
  * plane to place a 3d model of the Android robot.
  */
-public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
+
+public class HelloArActivity extends Activity implements GLSurfaceView.Renderer {
   private static final String TAG = HelloArActivity.class.getSimpleName();
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
+  private TextView textView;
 
   private boolean installRequested;
 
@@ -119,7 +118,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
+    textView = (TextView)findViewById(R.id.tvPosition);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
+
+//    PView pView = new PView(this);
+//    setContentView(pView);
 
     // Set up tap listener.
     tapHelper = new TapHelper(/*context=*/ this);
@@ -137,6 +140,19 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     calculateUVTransform = true;
 
     depthSettings.onCreate(this);
+  }
+
+  protected class PView extends View {
+    public PView(Context context){
+      super (context);
+    }
+    @Override
+    public void onDraw(Canvas canvas) {
+      Paint MyPaint = new Paint();
+      MyPaint.setColor(Color.WHITE);
+      MyPaint.setStrokeWidth(30f);
+      canvas.drawPoint(500, 600, MyPaint);
+    }
   }
 
   @Override
@@ -308,7 +324,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       }
 
       // Handle one tap per frame.
-      handleTap(frame, camera);
+      handleTap(frame);
 
       //카메라 화면 보여주기
       backgroundRenderer.draw(frame, false);
@@ -361,13 +377,16 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   }
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
-  private void handleTap(Frame frame, Camera camera) {
+  private void handleTap(Frame frame) {
     MotionEvent tap = tapHelper.poll();
-    if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
+    float x = 500;
+    float y = 600;
+    if (tap != null) {
+      tap.setLocation(x, y);
       for (HitResult hit : frame.hitTest(tap)) {
-        System.out.println("x: " + hit.getHitPose().tx());
-        System.out.println("y: " + hit.getHitPose().ty());
-        System.out.println("z: " + hit.getHitPose().tz());
+        System.out.println(tap.getX());
+        String position = "x: " + tap.getX() + ", y: " + tap.getY();
+        textView.setText(position + "\n" + hit.getDistance());
         System.out.println("-----------------------------");
         System.out.println("distance: " + hit.getDistance());
         System.out.println("-----------------------------");
