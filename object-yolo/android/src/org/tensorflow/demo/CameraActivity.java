@@ -87,7 +87,7 @@ public abstract class CameraActivity extends Activity
     sub.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        Intent intent = new Intent(getApplicationContext(), SubActivity.class);
+        Intent intent = new Intent(getApplicationContext(), HelloArActivity.class);
         startActivity(intent);
         System.out.println("test");
       }
