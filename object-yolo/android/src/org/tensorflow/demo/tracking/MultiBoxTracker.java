@@ -16,6 +16,7 @@ limitations under the License.
 package org.tensorflow.demo.tracking;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -85,6 +86,7 @@ public class MultiBoxTracker {
 
   private final float textSizePx;
   private final BorderedText borderedText;
+  private final BorderedText borderedTextMiddlePoint;
 
   private Matrix frameToCanvasMatrix;
 
@@ -111,6 +113,7 @@ public class MultiBoxTracker {
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
     borderedText = new BorderedText(textSizePx);
+    borderedTextMiddlePoint = new BorderedText(textSizePx);
   }
 
   private Matrix getFrameToCanvasMatrix() {
@@ -194,6 +197,10 @@ public class MultiBoxTracker {
       float middlePointX = trackedPos.left + trackedPos.width() / 2;
       float middlePointY = trackedPos.top + trackedPos.height() / 2;
       canvas.drawPoint(middlePointX, middlePointY, boxPaint);
+
+      String middlePoint = "x: " + middlePointX + ", y: " + middlePointY;
+
+      borderedTextMiddlePoint.drawText(canvas, middlePointX, middlePointY, middlePoint);
 
       System.out.println("x: " + middlePointX + ", y: " + middlePointY);
     }
