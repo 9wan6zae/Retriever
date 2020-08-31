@@ -85,7 +85,11 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View mView = inflater.inflate(R.layout.camera_connection_fragment_tracking, container, false);
+        //surfaceview 크기 조정
         GLSurfaceView surfaceView = (GLSurfaceView) mView.findViewById(R.id.surfaceview);
+        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(480, 640);
+        
+        surfaceView.setLayoutParams(params);
         textView = mView.findViewById(R.id.textView);
         trackingStateHelper = new TrackingStateHelper(activity);
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ activity);
