@@ -105,6 +105,9 @@ public abstract class CameraActivity extends Activity
   private Runnable postInferenceCallback;
   private Runnable imageConverter;
 
+  //---------------------------------
+  private GLSurfaceView surfaceView;
+
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
     LOGGER.d("onCreate " + this);
@@ -114,7 +117,8 @@ public abstract class CameraActivity extends Activity
     setContentView(R.layout.activity_camera);
 
     if (CameraPermissionHelper.hasCameraPermission(this)) {
-      setFragment();
+      //setFragment();
+      getFragmentManager().beginTransaction().replace(R.id.container, new DepthFragment()).commit();
     } else {
       CameraPermissionHelper.requestCameraPermission(this);
     }
@@ -264,7 +268,7 @@ public abstract class CameraActivity extends Activity
       if (grantResults.length > 0
               && grantResults[0] == PackageManager.PERMISSION_GRANTED
               && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-        setFragment();
+        //setFragment();
       } else {
         CameraPermissionHelper.requestCameraPermission(this);
       }
