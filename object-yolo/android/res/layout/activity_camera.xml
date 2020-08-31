@@ -20,4 +20,11 @@
     android:layout_height="match_parent"
     android:background="#000"
     tools:context="org.tensorflow.demo.CameraActivity"
-    tools:visibility="gone" />
+    tools:visibility="gone">
+
+    <Button
+        android:id="@+id/sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Test"/>
+</FrameLayout>

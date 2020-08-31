@@ -19,14 +19,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:gravity="clip_horizontal|center"
-    tools:context="com.google.ar.core.examples.java.helloar.HelloArActivity">
-
-  <android.support.constraint.ConstraintLayout
-      android:id="@+id/clayout"
-      android:layout_width="match_parent"
-      android:layout_height="match_parent">
-
-  </android.support.constraint.ConstraintLayout>
+    tools:context="org.tensorflow.demo.HelloArActivity">
 
   <android.opengl.GLSurfaceView
       android:id="@+id/surfaceview"
