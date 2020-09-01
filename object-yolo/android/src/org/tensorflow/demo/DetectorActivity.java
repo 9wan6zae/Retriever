@@ -50,13 +50,17 @@ import org.tensorflow.demo.R; // Explicit import needed for internal Google buil
 public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
 
+  private static final int TF_OD_API_INPUT_SIZE = 300;
+  private static final String TF_OD_API_MODEL_FILE =
+          "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
+  private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
 
   // Configuration values for tiny-yolo-voc. Note that the graph is not included with TensorFlow and
   // must be manually placed in the assets/ directory by the user.
   // Graphs and models downloaded from http://pjreddie.com/darknet/yolo/ may be converted e.g. via
   // DarkFlow (https://github.com/thtrieu/darkflow). Sample command:
   // ./flow --model cfg/tiny-yolo-voc.cfg --load bin/tiny-yolo-voc.weights --savepb --verbalise
-  private static final String YOLO_MODEL_FILE = "file:///android_asset/test-tiny-yolo-4c.pb";
+  private static final String YOLO_MODEL_FILE = "file:///android_asset/tiny-yolo-voc-graph.pb";
   private static final int YOLO_INPUT_SIZE = 416;
   private static final String YOLO_INPUT_NAME = "input";
   private static final String YOLO_OUTPUT_NAMES = "output";
@@ -68,10 +72,10 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   private enum DetectorMode {
     TF_OD_API, MULTIBOX, YOLO;
   }
-  private static final DetectorMode MODE = DetectorMode.YOLO;
+  private static final DetectorMode MODE = DetectorMode.TF_OD_API;
 
   // Minimum detection confidence to track a detection.
-  //private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
+  private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
   //private static final float MINIMUM_CONFIDENCE_MULTIBOX = 0.1f;
   private static final float MINIMUM_CONFIDENCE_YOLO = 0.25f;
 
@@ -113,15 +117,34 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     tracker = new MultiBoxTracker(this);
 
-    detector =
-            TensorFlowYoloDetector.create(
-                    getAssets(),
-                    YOLO_MODEL_FILE,
-                    YOLO_INPUT_SIZE,
-                    YOLO_INPUT_NAME,
-                    YOLO_OUTPUT_NAMES,
-                    YOLO_BLOCK_SIZE);
-    int cropSize = YOLO_INPUT_SIZE;
+    // 일단 Yolo model이 아니라 제공해주는 tf object dection api 사용
+    int cropSize = TF_OD_API_INPUT_SIZE;
+    if (MODE == DetectorMode.YOLO) {
+      LOGGER.i("aaaaaaaa");
+      detector =
+              TensorFlowYoloDetector.create(
+                      getAssets(),
+                      YOLO_MODEL_FILE,
+                      YOLO_INPUT_SIZE,
+                      YOLO_INPUT_NAME,
+                      YOLO_OUTPUT_NAMES,
+                      YOLO_BLOCK_SIZE);
+      cropSize = YOLO_INPUT_SIZE;
+    }  else {
+      LOGGER.i("cccccc");
+      try {
+        detector = TensorFlowObjectDetectionAPIModel.create(
+                getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+        cropSize = TF_OD_API_INPUT_SIZE;
+      } catch (final IOException e) {
+        LOGGER.e(e, "Exception initializing classifier!");
+        Toast toast =
+                Toast.makeText(
+                        getApplicationContext(), "Classifier could not be initialized", Toast.LENGTH_SHORT);
+        toast.show();
+        finish();
+      }
+    }
 
     previewWidth = size.getWidth();
     previewHeight = size.getHeight();
@@ -241,6 +264,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
           public void run() {
             LOGGER.i("Running detection on image " + currTimestamp);
             final long startTime = SystemClock.uptimeMillis();
+            // 백그라운드에서 계속 돌면서 object 값 받아와서 result에 저장.
             final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
             lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
@@ -259,6 +283,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
             for (final Classifier.Recognition result : results) {
               final RectF location = result.getLocation();
+              // result location이 rectf 형태로 받아와지는 것 확인 but 광재가 확인한 부분과 다름.
+              LOGGER.i("gggggggg and " +  result + " and " + ( (location.left + location.right) /2) + "and" + ( (location.top + location.bottom) / 2)   );
               if (location != null && result.getConfidence() >= minimumConfidence) {
                 canvas.drawRect(location, paint);
 
