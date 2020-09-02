@@ -18,6 +18,7 @@ package com.google.ar.core.examples.java.helloar;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -25,10 +26,13 @@ import android.graphics.Point;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -99,6 +103,8 @@ public class HelloArActivity extends Activity implements GLSurfaceView.Renderer 
 
   private final DepthSettings depthSettings = new DepthSettings();
   private TextToSpeech tts;
+  private float objectPointX;
+  private float objectPointY;
 
   private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
 
@@ -120,9 +126,28 @@ public class HelloArActivity extends Activity implements GLSurfaceView.Renderer 
     surfaceView = findViewById(R.id.surfaceview);
     textView = (TextView)findViewById(R.id.tvPosition);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
+    getIntentValue();
 
 //    PView pView = new PView(this);
 //    setContentView(pView);
+    Button intentButton = (Button)findViewById(R.id.goToOD);
+
+    intentButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        //Intent intent = new Intent(getApplicationContext(), SubActivity.class);
+//        Intent intent = new Intent();
+//        intent.setClassName("org.tensorflow.demo", "org.tensorflow.demo.DetectorActivity");
+//        startActivityForResult(intent, 0);
+//        Intent intent = new Intent();
+//        intent.putExtra("msg", "test");
+//        setResult(0, intent);
+//        finishActivity(0);
+        System.out.println("==============");
+        System.out.println("B");
+        System.out.println("==============");
+      }
+    });
 
     // Set up tap listener.
     tapHelper = new TapHelper(/*context=*/ this);
@@ -140,6 +165,12 @@ public class HelloArActivity extends Activity implements GLSurfaceView.Renderer 
     calculateUVTransform = true;
 
     depthSettings.onCreate(this);
+  }
+
+  public void getIntentValue () {
+    Intent intent = getIntent();
+    objectPointX = intent.getFloatExtra("x", 0);
+    objectPointY = intent.getFloatExtra("y", 0);
   }
 
   protected class PView extends View {
@@ -262,11 +293,11 @@ public class HelloArActivity extends Activity implements GLSurfaceView.Renderer 
     }
   }
 
-  @Override
-  public void onWindowFocusChanged(boolean hasFocus) {
-    super.onWindowFocusChanged(hasFocus);
-    FullScreenHelper.setFullScreenOnWindowFocusChanged(this, hasFocus);
-  }
+//  @Override
+//  public void onWindowFocusChanged(boolean hasFocus) {
+//    super.onWindowFocusChanged(hasFocus);
+//    FullScreenHelper.setFullScreenOnWindowFocusChanged(this, hasFocus);
+//  }
 
   @Override
   public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -378,11 +409,21 @@ public class HelloArActivity extends Activity implements GLSurfaceView.Renderer 
 
   // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
   private void handleTap(Frame frame) {
-    MotionEvent tap = tapHelper.poll();
-    float x = 500;
-    float y = 600;
+    //MotionEvent tap = tapHelper.poll();
+    long downTime = SystemClock.uptimeMillis();
+    long eventTime = SystemClock.uptimeMillis() + 100;
+    int metaState = 0;
+
+    MotionEvent tap = MotionEvent.obtain(
+            downTime,
+            eventTime,
+            MotionEvent.ACTION_UP,
+            objectPointX,
+            objectPointY,
+            metaState
+    );
+
     if (tap != null) {
-      tap.setLocation(x, y);
       for (HitResult hit : frame.hitTest(tap)) {
         System.out.println(tap.getX());
         String position = "x: " + tap.getX() + ", y: " + tap.getY();
