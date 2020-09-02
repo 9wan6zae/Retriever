@@ -19,11 +19,17 @@
     package="com.google.ar.core.examples.java.helloar">
 
   <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
   <!-- Limits app visibility in the Google Play Store to ARCore supported devices
        (https://developers.google.com/ar/discover/supported-devices). -->
   <uses-feature android:name="android.hardware.camera.ar" android:required="true"/>
   <uses-feature android:glEsVersion="0x00020000" android:required="true" />
   <uses-feature android:name="com.google.ar.core.depth" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
   <application
       android:allowBackup="false"
       android:icon="@drawable/ic_launcher"
@@ -31,9 +37,19 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="false"
       tools:ignore="GoogleAppIndexingWarning">
-
     <activity
         android:name="com.google.ar.core.examples.java.helloar.HelloArActivity"
+        android:configChanges="orientation|screenSize"
+        android:exported="true"
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:screenOrientation="locked">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+      </intent-filter>
+    </activity>
+    <activity
+        android:name="org.tensorflow.demo.DetectorActivity"
         android:configChanges="orientation|screenSize"
         android:exported="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
