@@ -146,8 +146,20 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View mView = inflater.inflate(layout, container, false);
         //surfaceview 크기 조정
+
+        int width = 0;
+        int height = 0;
+
+        Bundle bundle = getArguments();
+
+        if (bundle != null) {
+            width = bundle.getInt("width");
+            height = bundle.getInt("height");
+        }
+        System.out.println("phoneWidth: " + width + " , phoneHeight: " + height);
+
         GLSurfaceView surfaceView = (GLSurfaceView) mView.findViewById(R.id.surfaceview);
-        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(960, 1280);
+        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(width, height);
 
         installRequested = false;
         surfaceView.setLayoutParams(params);

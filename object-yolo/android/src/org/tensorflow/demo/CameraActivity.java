@@ -21,6 +21,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -35,6 +36,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
 import android.util.Size;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -104,6 +106,9 @@ public abstract class CameraActivity extends Activity
   private Runnable postInferenceCallback;
   private Runnable imageConverter;
 
+  private int phoneWidth;
+  private int phoneHeight;
+
   //---------------------------------
   private GLSurfaceView surfaceView;
   private Frame frame;
@@ -115,6 +120,14 @@ public abstract class CameraActivity extends Activity
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
     setContentView(R.layout.activity_camera);
+
+    Display display = getWindowManager().getDefaultDisplay();
+    Point size = new Point();
+    display.getRealSize(size); // or getSize(size)
+    phoneWidth = size.x;
+    phoneHeight = size.y;
+
+    System.out.println("w: " + phoneWidth + " , h:" + phoneHeight);
 
     if (CameraPermissionHelper.hasCameraPermission(this)) {
       setFragment();
@@ -338,6 +351,11 @@ public abstract class CameraActivity extends Activity
                     getDesiredPreviewFrameSize());
 
     fragment = depthFragment;
+
+    Bundle bundle = new Bundle();
+    bundle.putInt("width", phoneWidth);
+    bundle.putInt("height", phoneHeight);
+    depthFragment.setArguments(bundle);
 
     getFragmentManager().beginTransaction().replace(R.id.container, fragment).commit();
   }
