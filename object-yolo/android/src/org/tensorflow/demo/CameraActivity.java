@@ -153,6 +153,7 @@ public abstract class CameraActivity extends Activity
     }
     if (rgbBytes == null) {
       rgbBytes = new int[previewWidth * previewHeight];
+      LOGGER.i("rgbbytes size : " + previewWidth * previewHeight);
     }
     try {
       if (frame == null) {

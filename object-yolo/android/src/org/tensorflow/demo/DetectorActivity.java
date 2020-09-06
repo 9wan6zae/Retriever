@@ -81,7 +81,7 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
   private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.TF_OD_API;
 
-  private static final Size DESIRED_PREVIEW_SIZE = new Size(960, 1280);
+  private static final Size DESIRED_PREVIEW_SIZE = new Size(480, 640);
 
   private static final boolean SAVE_PREVIEW_BITMAP = false;
   private static final float TEXT_SIZE_DIP = 10;
