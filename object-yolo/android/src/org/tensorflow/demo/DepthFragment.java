@@ -287,7 +287,7 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-        previewSize = new Size(960, 1280);
+        previewSize = new Size(640, 480);
         sensorOrientation = 90;
         depthCallback.onPreviewSizeChosen(previewSize, sensorOrientation);
 
