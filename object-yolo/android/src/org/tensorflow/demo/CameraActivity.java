@@ -81,7 +81,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public abstract class CameraActivity extends Activity
-        implements OnImageAvailableListener {
+        implements DepthFragment.OnFrameListener {
   private static final Logger LOGGER = new Logger();
 
   private static final int PERMISSIONS_REQUEST = 0;
@@ -107,6 +107,7 @@ public abstract class CameraActivity extends Activity
 
   //---------------------------------
   private GLSurfaceView surfaceView;
+  private Frame frame;
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -117,8 +118,8 @@ public abstract class CameraActivity extends Activity
     setContentView(R.layout.activity_camera);
 
     if (CameraPermissionHelper.hasCameraPermission(this)) {
-      //setFragment();
-      getFragmentManager().beginTransaction().replace(R.id.container, new DepthFragment()).commit();
+      setFragment();
+
     } else {
       CameraPermissionHelper.requestCameraPermission(this);
     }
@@ -139,38 +140,41 @@ public abstract class CameraActivity extends Activity
     return yuvBytes[0];
   }
 
-
-  /**
-   * Callback for Camera2 API
-   */
   @Override
-  public void onImageAvailable(final ImageReader reader) {
+  public void onFrameSet(Frame frame){
+    this.frame = frame;
+    frameToBitmap(frame);
+  }
+
+  public void frameToBitmap(Frame frame) {
+    LOGGER.i("frameToBitmap start ???");
     //We need wait until we have some size from onPreviewSizeChosen
     if (previewWidth == 0 || previewHeight == 0) {
+      LOGGER.i("preview width, height == 0 !!!");
       return;
     }
+    LOGGER.i("111");
     if (rgbBytes == null) {
       rgbBytes = new int[previewWidth * previewHeight];
     }
+    LOGGER.i("222");
     try {
-      final Image image = reader.acquireLatestImage();
-
-      if (image == null) {
+      if (frame == null) {
+        LOGGER.i("null frame !!!");
         return;
       }
-
       if (isProcessingFrame) {
-        image.close();
+        LOGGER.i("isProcessingFrame False");
         return;
       }
+      LOGGER.i("333");
       isProcessingFrame = true;
       Trace.beginSection("imageAvailable");
-      final android.media.Image.Plane[] planes = image.getPlanes();
+      final android.media.Image.Plane[] planes = frame.acquireCameraImage().getPlanes();
       fillBytes(planes, yuvBytes);
       yRowStride = planes[0].getRowStride();
       final int uvRowStride = planes[1].getRowStride();
       final int uvPixelStride = planes[1].getPixelStride();
-
       imageConverter =
               new Runnable() {
                 @Override
@@ -192,7 +196,6 @@ public abstract class CameraActivity extends Activity
               new Runnable() {
                 @Override
                 public void run() {
-                  image.close();
                   isProcessingFrame = false;
                 }
               };
@@ -268,7 +271,7 @@ public abstract class CameraActivity extends Activity
       if (grantResults.length > 0
               && grantResults[0] == PackageManager.PERMISSION_GRANTED
               && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-        //setFragment();
+        setFragment();
       } else {
         CameraPermissionHelper.requestCameraPermission(this);
       }
@@ -322,35 +325,23 @@ public abstract class CameraActivity extends Activity
   }
 
   protected void setFragment() {
-    String cameraId = chooseCamera();
-    if (cameraId == null) {
-      Toast.makeText(this, "No Camera Detected", Toast.LENGTH_SHORT).show();
-      finish();
-    }
-
     Fragment fragment;
 
-    CameraConnectionFragment camera2Fragment =
-            CameraConnectionFragment.newInstance(
-                    new CameraConnectionFragment.ConnectionCallback() {
+    DepthFragment depthFragment =
+            DepthFragment.newInstance(
+                    new DepthFragment.ConnectionCallback() {
                       @Override
                       public void onPreviewSizeChosen(final Size size, final int rotation) {
                         previewHeight = size.getHeight();
                         previewWidth = size.getWidth();
                         CameraActivity.this.onPreviewSizeChosen(size, rotation);
                       }},
-                    this,
                     getLayoutId(),
                     getDesiredPreviewFrameSize());
 
-      camera2Fragment.setCamera(cameraId);
-      fragment = camera2Fragment;
+    fragment = depthFragment;
 
-
-    getFragmentManager()
-            .beginTransaction()
-            .replace(R.id.container, fragment)
-            .commit();
+    getFragmentManager().beginTransaction().replace(R.id.container, fragment).commit();
   }
 
   protected void fillBytes(final android.media.Image.Plane[] planes, final byte[][] yuvBytes) {

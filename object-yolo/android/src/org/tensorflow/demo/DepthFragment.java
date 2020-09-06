@@ -2,12 +2,20 @@ package org.tensorflow.demo;
 
 import android.app.Activity;
 import android.content.Context;
+import android.hardware.camera2.CameraCharacteristics;
+import android.media.ImageReader;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.text.TextUtils;
 import android.util.Log;
+import android.util.Size;
+import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -44,6 +52,10 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -55,9 +67,9 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     private GLSurfaceView surfaceView;
 
     private boolean installRequested;
-
     private Session session;
     //private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
+    private OnFrameListener onFrameListener;
     private DisplayRotationHelper displayRotationHelper;
     private TrackingStateHelper trackingStateHelper;
     private TapHelper tapHelper;
@@ -74,21 +86,71 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
 
     private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
 
+    private static final int MINIMUM_PREVIEW_SIZE = 320;
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    private static final String FRAGMENT_DIALOG = "dialog";
+
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+    }
+
+    public interface ConnectionCallback{
+        void onPreviewSizeChosen(Size size, int cameraRotation);
+    }
+
+    public interface OnFrameListener{
+        void onFrameSet(Frame frame);
+    }
+
+    private Integer sensorOrientation;
+    private Size previewSize;
+
+    private HandlerThread backgroundThread;
+    private Handler backgroundHandler;
+    private ImageReader previewReader;
+    private final Size inputSize;
+    private final int layout;
+
+    private final ConnectionCallback depthCallback;
+
+    private DepthFragment(
+            final ConnectionCallback connectionCallback,
+            final int layout,
+            final Size inputSize){
+        this.depthCallback = connectionCallback;
+        this.layout = layout;
+        this.inputSize = inputSize;
+    }
+
+    public static DepthFragment newInstance(
+            final ConnectionCallback callback,
+            final int layout,
+            final Size inputSize){
+        return new DepthFragment(callback, layout, inputSize);
+    }
+
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
         if(context instanceof Activity){
             activity = (Activity) context;
         }
+        if(context instanceof OnFrameListener){
+            onFrameListener = (OnFrameListener) context;
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
-        View mView = inflater.inflate(R.layout.camera_connection_fragment_tracking, container, false);
+        View mView = inflater.inflate(layout, container, false);
         //surfaceview 크기 조정
         GLSurfaceView surfaceView = (GLSurfaceView) mView.findViewById(R.id.surfaceview);
-        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(480, 640);
-        
+        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(960, 1280);
+
+        installRequested = false;
         surfaceView.setLayoutParams(params);
         textView = mView.findViewById(R.id.textView);
         trackingStateHelper = new TrackingStateHelper(activity);
@@ -113,8 +175,15 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     }
 
     @Override
+    public void onActivityCreated(final Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
     public void onResume(){
         super.onResume();
+        startBackgroundThread();
+
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -180,7 +249,14 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     }
 
     @Override
+    public void onDetach() {
+        super.onDetach();
+        onFrameListener = null;
+    }
+
+    @Override
     public void onPause() {
+        stopBackgroundThread();
         super.onPause();
         if (session != null) {
             // Note that the order matters - GLSurfaceView is paused first so that it does not try
@@ -210,6 +286,10 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+        previewSize = new Size(960, 1280);
+        sensorOrientation = 90;
+        depthCallback.onPreviewSizeChosen(previewSize, sensorOrientation);
 
         // Prepare the rendering objects. This involves reading shaders, so may throw an IOException.
         try {
@@ -264,6 +344,8 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
 
             // Handle one tap per frame.
             handleTap(frame, camera);
+
+            onFrameListener.onFrameSet(frame);
 
             //카메라 화면 보여주기
             backgroundRenderer.draw(frame, false);
@@ -374,5 +456,21 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         uvTransform[8] = 1;
 
         return uvTransform;
+    }
+
+    private void startBackgroundThread() {
+        backgroundThread = new HandlerThread("ImageListener");
+        backgroundThread.start();
+        backgroundHandler = new Handler(backgroundThread.getLooper());
+    }
+
+    private void stopBackgroundThread() {
+        backgroundThread.quitSafely();
+        try {
+            backgroundThread.join();
+            backgroundThread = null;
+            backgroundHandler = null;
+        } catch (final InterruptedException e) {
+        }
     }
 }
