@@ -181,6 +181,11 @@ public class ImageUtils {
     }
 
     int yp = 0;
+    LOGGER.i("@@@ height: " + height);
+    LOGGER.i("@@@ width: " + width);
+    LOGGER.i("@@@ yRowStride: " + yRowStride);
+    LOGGER.i("@@@ uvRowStride:" + uvPixelStride);
+
     for (int j = 0; j < height; j++) {
       int pY = yRowStride * j;
       int pUV = uvRowStride * (j >> 1);

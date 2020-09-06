@@ -21,7 +21,6 @@ import android.view.ViewGroup;
 
 import android.app.Fragment;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
@@ -272,8 +271,7 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (!CameraPermissionHelper.hasCameraPermission(activity)) {
-            Toast.makeText(activity, "Camera permission is needed to run this application", Toast.LENGTH_LONG)
-                    .show();
+
             if (!CameraPermissionHelper.shouldShowRequestPermissionRationale(activity)) {
                 // Permission denied with checking "Do not ask again".
                 CameraPermissionHelper.launchPermissionSettings(activity);
