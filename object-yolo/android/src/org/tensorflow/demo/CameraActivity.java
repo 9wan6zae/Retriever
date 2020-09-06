@@ -38,7 +38,6 @@ import android.util.Size;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.WindowManager;
-import android.widget.Toast;
 import java.nio.ByteBuffer;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
@@ -48,7 +47,6 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.widget.Toast;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
@@ -91,6 +89,7 @@ public abstract class CameraActivity extends Activity
 
   private boolean debug = false;
 
+  private Image image;
   private Handler handler;
   private HandlerThread handlerThread;
   private boolean useCamera2API;
@@ -147,30 +146,26 @@ public abstract class CameraActivity extends Activity
   }
 
   public void frameToBitmap(Frame frame) {
-    LOGGER.i("frameToBitmap start ???");
     //We need wait until we have some size from onPreviewSizeChosen
     if (previewWidth == 0 || previewHeight == 0) {
       LOGGER.i("preview width, height == 0 !!!");
       return;
     }
-    LOGGER.i("111");
     if (rgbBytes == null) {
       rgbBytes = new int[previewWidth * previewHeight];
     }
-    LOGGER.i("222");
     try {
       if (frame == null) {
-        LOGGER.i("null frame !!!");
         return;
       }
       if (isProcessingFrame) {
         LOGGER.i("isProcessingFrame False");
         return;
       }
-      LOGGER.i("333");
       isProcessingFrame = true;
       Trace.beginSection("imageAvailable");
-      final android.media.Image.Plane[] planes = frame.acquireCameraImage().getPlanes();
+      image = frame.acquireCameraImage();
+      final android.media.Image.Plane[] planes = image.getPlanes();
       fillBytes(planes, yuvBytes);
       yRowStride = planes[0].getRowStride();
       final int uvRowStride = planes[1].getRowStride();
@@ -202,10 +197,12 @@ public abstract class CameraActivity extends Activity
 
       processImage();
     } catch (final Exception e) {
-      LOGGER.e(e, "Exception!");
+      LOGGER.e(e, "Exception! 11");
+      isProcessingFrame = false;
       Trace.endSection();
       return;
     }
+    image.close();
     Trace.endSection();
   }
 
@@ -240,7 +237,7 @@ public abstract class CameraActivity extends Activity
       handlerThread = null;
       handler = null;
     } catch (final InterruptedException e) {
-      LOGGER.e(e, "Exception!");
+      LOGGER.e(e, "Exception! 22");
     }
 
     super.onPause();

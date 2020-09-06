@@ -33,7 +33,6 @@ import android.view.Display;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.ar.core.Camera;
 import com.google.ar.core.Frame;
@@ -62,18 +61,10 @@ import javax.microedition.khronos.opengles.GL10;
 public class DetectorActivity extends CameraActivity implements DepthFragment.OnFrameListener {
   private static final Logger LOGGER = new Logger();
 
-
-  // Configuration values for tiny-yolo-voc. Note that the graph is not included with TensorFlow and
-  // must be manually placed in the assets/ directory by the user.
-  // Graphs and models downloaded from http://pjreddie.com/darknet/yolo/ may be converted e.g. via
-  // DarkFlow (https://github.com/thtrieu/darkflow). Sample command:
-  // ./flow --model cfg/tiny-yolo-voc.cfg --load bin/tiny-yolo-voc.weights --savepb --verbalise
-  //private static final String YOLO_MODEL_FILE = "file:///android_asset/test-tiny-yolo-4c.pb";
-  private static final String YOLO_MODEL_FILE = "file:///android_asset/tiny-yolo-voc-graph.pb";
-  private static final int YOLO_INPUT_SIZE = 416;
-  private static final String YOLO_INPUT_NAME = "input";
-  private static final String YOLO_OUTPUT_NAMES = "output";
-  private static final int YOLO_BLOCK_SIZE = 32;
+  private static final int TF_OD_API_INPUT_SIZE = 300;
+  private static final String TF_OD_API_MODEL_FILE =
+          "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
+  private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
 
   // Which detection model to use: by default uses Tensorflow Object Detection API frozen
   // checkpoints.  Optionally use legacy Multibox (trained using an older version of the API)
@@ -81,14 +72,14 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
   private enum DetectorMode {
     TF_OD_API, MULTIBOX, YOLO;
   }
-  private static final DetectorMode MODE = DetectorMode.YOLO;
+  private static final DetectorMode MODE = DetectorMode.TF_OD_API;
 
   // Minimum detection confidence to track a detection.
-  //private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
+  private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
   //private static final float MINIMUM_CONFIDENCE_MULTIBOX = 0.1f;
-  private static final float MINIMUM_CONFIDENCE_YOLO = 0.25f;
+  //private static final float MINIMUM_CONFIDENCE_YOLO = 0.25f;
 
-  private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.YOLO;
+  private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.TF_OD_API;
 
   private static final Size DESIRED_PREVIEW_SIZE = new Size(960, 1280);
 
@@ -125,17 +116,16 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
     borderedText = new BorderedText(textSizePx);
     borderedText.setTypeface(Typeface.MONOSPACE);
 
+    int cropSize = TF_OD_API_INPUT_SIZE;
     tracker = new MultiBoxTracker(this);
 
-    detector =
-            TensorFlowYoloDetector.create(
-                    getAssets(),
-                    YOLO_MODEL_FILE,
-                    YOLO_INPUT_SIZE,
-                    YOLO_INPUT_NAME,
-                    YOLO_OUTPUT_NAMES,
-                    YOLO_BLOCK_SIZE);
-    int cropSize = YOLO_INPUT_SIZE;
+    try {
+      detector = TensorFlowObjectDetectionAPIModel.create(
+              getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
+    } catch (final IOException e) {
+      LOGGER.e(e, "Exception initializing classifier!");
+      finish();
+    }
 
     previewWidth = size.getWidth();
     previewHeight = size.getHeight();
@@ -222,7 +212,7 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
     tracker.onFrame(
         previewWidth,
         previewHeight,
-        getLuminanceStride(), //previewwidth
+        getLuminanceStride(),
         sensorOrientation,
         originalLuminance,
         timestamp);
@@ -267,13 +257,14 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
             paint.setStyle(Style.STROKE);
             paint.setStrokeWidth(2.0f);
 
-            float minimumConfidence = MINIMUM_CONFIDENCE_YOLO;
+            float minimumConfidence = MINIMUM_CONFIDENCE_TF_OD_API;
 
             final List<Classifier.Recognition> mappedRecognitions =
                 new LinkedList<Classifier.Recognition>();
 
             for (final Classifier.Recognition result : results) {
               final RectF location = result.getLocation();
+              LOGGER.i("found??? : " + result);
               if (location != null && result.getConfidence() >= minimumConfidence) {
                 canvas.drawRect(location, paint);
 
