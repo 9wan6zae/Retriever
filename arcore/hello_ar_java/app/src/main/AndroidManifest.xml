@@ -37,19 +37,9 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="false"
       tools:ignore="GoogleAppIndexingWarning">
+
     <activity
         android:name="com.google.ar.core.examples.java.helloar.HelloArActivity"
-        android:configChanges="orientation|screenSize"
-        android:exported="true"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:screenOrientation="locked">
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW"/>
-        <category android:name="android.intent.category.DEFAULT"/>
-      </intent-filter>
-    </activity>
-    <activity
-        android:name="org.tensorflow.demo.DetectorActivity"
         android:configChanges="orientation|screenSize"
         android:exported="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"

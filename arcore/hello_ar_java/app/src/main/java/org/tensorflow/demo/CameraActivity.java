@@ -89,9 +89,9 @@ public abstract class CameraActivity extends Activity
     intentButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        //Intent intent = new Intent(getApplicationContext(), SubActivity.class);
         Intent intent = new Intent();
-        intent.setClassName("com.google.ar.core.examples.java.helloar", "com.google.ar.core.examples.java.helloar.HelloArActivity");
+        intent.setComponent(new ComponentName("com.google.ar.core.examples.java.helloar", "com.google.ar.core.examples.java.helloar.HelloArActivity"));
+        //intent.setClassName("com.google.ar.core.examples.java.helloar", "com.google.ar.core.examples.java.helloar.HelloArActivity");
         //intent.setClassName("org.tensorflow.demo", "org.tensorflow.demo.DetectorActivity");
         intent.putExtra("code", 1);
         startActivity(intent);

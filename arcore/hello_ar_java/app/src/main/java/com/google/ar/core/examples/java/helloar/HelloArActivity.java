@@ -136,9 +136,9 @@ public class HelloArActivity extends Activity implements GLSurfaceView.Renderer 
       @Override
       public void onClick(View v) {
         //Intent intent = new Intent(getApplicationContext(), SubActivity.class);
-//        Intent intent = new Intent();
-//        intent.setClassName("org.tensorflow.demo", "org.tensorflow.demo.DetectorActivity");
-//        startActivityForResult(intent, 0);
+        Intent intent = new Intent();
+        intent.setClassName("org.tensorflow.demo", "org.tensorflow.demo.DetectorActivity");
+        startActivityForResult(intent, 0);
 //        Intent intent = new Intent();
 //        intent.putExtra("msg", "test");
 //        setResult(0, intent);

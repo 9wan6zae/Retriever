@@ -203,7 +203,17 @@ public class MultiBoxTracker {
       borderedTextMiddlePoint.drawText(canvas, middlePointX, middlePointY, middlePoint);
 
       System.out.println("x: " + middlePointX + ", y: " + middlePointY);
+      goToAR(middlePointX, middlePointY);
     }
+  }
+
+  public void goToAR(float x, float y) {
+    Intent intent = new Intent();
+    intent.setClassName("com.google.ar.core.examples.java.helloar", "com.google.ar.core.examples.java.helloar.HelloArActivity");
+    //intent.setClassName("org.tensorflow.demo", "org.tensorflow.demo.DetectorActivity");
+    intent.putExtra("x", x);
+    intent.putExtra("y", y);
+    context.startActivity(intent);
   }
 
   private boolean initialized = false;

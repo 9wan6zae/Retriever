@@ -19,6 +19,7 @@ package org.tensorflow.demo;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -87,9 +88,14 @@ public abstract class CameraActivity extends Activity
     sub.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
-        Intent intent = new Intent(getApplicationContext(), DetectorActivity.class);
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName("com.google.ar.core.examples.java.helloar", "com.google.ar.core.examples.java.helloar.HelloArActivity"));
+        intent.putExtra("code", 1);
         startActivity(intent);
-        System.out.println("test");
+
+        System.out.println("==============");
+        System.out.println("A");
+        System.out.println("==============");
       }
     });
 
