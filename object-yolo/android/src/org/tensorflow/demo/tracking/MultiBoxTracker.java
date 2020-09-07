@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import org.tensorflow.demo.Classifier.Recognition;
+import org.tensorflow.demo.GlobalVariable;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
@@ -97,14 +98,6 @@ public class MultiBoxTracker {
 
   private int sensorOrientation;
   private Context context;
-
-  public float getMiddlePointX() {
-    return middlePointX;
-  }
-
-  public float getMiddlePointY() {
-    return middlePointY;
-  }
 
   public MultiBoxTracker(final Context context) {
     this.context = context;
@@ -208,12 +201,16 @@ public class MultiBoxTracker {
       middlePointX = trackedPos.left + trackedPos.width() / 2;
       middlePointY = trackedPos.top + trackedPos.height() / 2;
       canvas.drawPoint(middlePointX, middlePointY, boxPaint);
+      //전역변수 설정
+      final GlobalVariable globalVariable = (GlobalVariable) context.getApplicationContext();
 
-      String middlePoint = "x: " + middlePointX + ", y: " + middlePointY;
-
+      String middlePoint = "distance:" + globalVariable.getDistance();
+      //중앙점에 표시할 문자열
       borderedTextMiddlePoint.drawText(canvas, middlePointX, middlePointY, middlePoint);
 
-      System.out.println("x: " + middlePointX + ", y: " + middlePointY);
+      //중앙점 전역변수에 저장
+      globalVariable.setMiddlePointX(middlePointX);
+      globalVariable.setMiddlePointY(middlePointY);
     }
   }
 

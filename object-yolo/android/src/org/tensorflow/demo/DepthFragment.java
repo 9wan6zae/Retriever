@@ -147,10 +147,9 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View mView = inflater.inflate(layout, container, false);
         //surfaceview 크기 조정
-
         int width = 0;
         int height = 0;
-
+        //CameraActivity에서 Bundle을 통해 보낸 width, height로 surface view 크기 지정
         Bundle bundle = getArguments();
 
         if (bundle != null) {
@@ -414,13 +413,15 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
     private void handleTap(Frame frame, Camera camera) {
         final GlobalVariable globalVariable = (GlobalVariable) activity.getApplicationContext();
+        //전역변수에서 중앙점 가져오기
         float objectPointX = globalVariable.getMiddlePointX();
         float objectPointY = globalVariable.getMiddlePointY();
-
+        //누른 시간
         long downTime = SystemClock.uptimeMillis();
+        //이벤트 발생 시간
         long eventTime = SystemClock.uptimeMillis() + 100;
         int metaState = 0;
-
+        //위의 두 시간을 이용해서 터치 이벤트 발생, 터치한 지점은 중앙점
         MotionEvent tap = MotionEvent.obtain(
                 downTime,
                 eventTime,
@@ -438,6 +439,7 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
                 System.out.println("-----------------------------");
                 String position = "x: " + tap.getX() + ", y: " + tap.getY();
                 textView.setText(position + "\n" + hit.getDistance());
+                globalVariable.setDistance(hit.getDistance());
             }
         }
     }

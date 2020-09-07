@@ -103,7 +103,7 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
   private Matrix cropToFrameTransform;
 
   private MultiBoxTracker tracker;
-
+  //물체의 중앙점
   public float middlePointX;
   public float middlePointY;
 
@@ -279,15 +279,6 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
             tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
             trackingOverlay.postInvalidate();
-
-            middlePointX = tracker.getMiddlePointX();
-            middlePointY = tracker.getMiddlePointY();
-            System.out.println("middlePointX_detector: " + middlePointX);
-            System.out.println("middlePointY_detector: " + middlePointY);
-
-            final GlobalVariable globalVariable = (GlobalVariable) getApplicationContext();
-            globalVariable.setMiddlePointX(middlePointX);
-            globalVariable.setMiddlePointY(middlePointY);
 
             requestRender();
             computingDetection = false;

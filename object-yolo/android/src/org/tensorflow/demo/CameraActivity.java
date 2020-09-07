@@ -121,6 +121,7 @@ public abstract class CameraActivity extends Activity
 
     setContentView(R.layout.activity_camera);
 
+    //스마트폰의 픽셀 사이즈
     Display display = getWindowManager().getDefaultDisplay();
     Point size = new Point();
     display.getRealSize(size); // or getSize(size)
@@ -351,7 +352,7 @@ public abstract class CameraActivity extends Activity
                     getDesiredPreviewFrameSize());
 
     fragment = depthFragment;
-
+    //Bundle을 이용해서 onCreate에서 구한 width와 height를 DepthFragment로 보냄
     Bundle bundle = new Bundle();
     bundle.putInt("width", phoneWidth);
     bundle.putInt("height", phoneHeight);
