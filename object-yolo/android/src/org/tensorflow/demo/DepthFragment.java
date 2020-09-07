@@ -9,6 +9,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
@@ -412,13 +413,31 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
 
     // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
     private void handleTap(Frame frame, Camera camera) {
-        MotionEvent tap = tapHelper.poll();
+        final GlobalVariable globalVariable = (GlobalVariable) activity.getApplicationContext();
+        float objectPointX = globalVariable.getMiddlePointX();
+        float objectPointY = globalVariable.getMiddlePointY();
+
+        long downTime = SystemClock.uptimeMillis();
+        long eventTime = SystemClock.uptimeMillis() + 100;
+        int metaState = 0;
+
+        MotionEvent tap = MotionEvent.obtain(
+                downTime,
+                eventTime,
+                MotionEvent.ACTION_UP,
+                objectPointX,
+                objectPointY,
+                metaState
+        );
+
+        //MotionEvent tap = tapHelper.poll();
         if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
             for (HitResult hit : frame.hitTest(tap)) {
                 System.out.println("-----------------------------");
                 System.out.println("distance: " + hit.getDistance());
                 System.out.println("-----------------------------");
-                textView.setText("distance:" + hit.getDistance());
+                String position = "x: " + tap.getX() + ", y: " + tap.getY();
+                textView.setText(position + "\n" + hit.getDistance());
             }
         }
     }

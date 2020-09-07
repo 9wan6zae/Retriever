@@ -85,6 +85,10 @@ public class MultiBoxTracker {
 
   private final float textSizePx;
   private final BorderedText borderedText;
+  private final BorderedText borderedTextMiddlePoint;
+
+  private float middlePointX;
+  private float middlePointY;
 
   private Matrix frameToCanvasMatrix;
 
@@ -93,6 +97,14 @@ public class MultiBoxTracker {
 
   private int sensorOrientation;
   private Context context;
+
+  public float getMiddlePointX() {
+    return middlePointX;
+  }
+
+  public float getMiddlePointY() {
+    return middlePointY;
+  }
 
   public MultiBoxTracker(final Context context) {
     this.context = context;
@@ -111,6 +123,7 @@ public class MultiBoxTracker {
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
     borderedText = new BorderedText(textSizePx);
+    borderedTextMiddlePoint = new BorderedText(textSizePx);
   }
 
   private Matrix getFrameToCanvasMatrix() {
@@ -191,6 +204,16 @@ public class MultiBoxTracker {
               : String.format("%.2f", recognition.detectionConfidence);
       logger.i("***found : " + recognition.title);
       borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
+
+      middlePointX = trackedPos.left + trackedPos.width() / 2;
+      middlePointY = trackedPos.top + trackedPos.height() / 2;
+      canvas.drawPoint(middlePointX, middlePointY, boxPaint);
+
+      String middlePoint = "x: " + middlePointX + ", y: " + middlePointY;
+
+      borderedTextMiddlePoint.drawText(canvas, middlePointX, middlePointY, middlePoint);
+
+      System.out.println("x: " + middlePointX + ", y: " + middlePointY);
     }
   }
 

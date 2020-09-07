@@ -104,6 +104,9 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
   private MultiBoxTracker tracker;
 
+  public float middlePointX;
+  public float middlePointY;
+
   private byte[] luminanceCopy;
 
   private BorderedText borderedText;
@@ -276,6 +279,15 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
             tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
             trackingOverlay.postInvalidate();
+
+            middlePointX = tracker.getMiddlePointX();
+            middlePointY = tracker.getMiddlePointY();
+            System.out.println("middlePointX_detector: " + middlePointX);
+            System.out.println("middlePointY_detector: " + middlePointY);
+
+            final GlobalVariable globalVariable = (GlobalVariable) getApplicationContext();
+            globalVariable.setMiddlePointX(middlePointX);
+            globalVariable.setMiddlePointY(middlePointY);
 
             requestRender();
             computingDetection = false;
