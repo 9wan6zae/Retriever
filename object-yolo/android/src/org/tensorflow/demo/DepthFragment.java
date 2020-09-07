@@ -2,7 +2,6 @@ package org.tensorflow.demo;
 
 import android.app.Activity;
 import android.content.Context;
-import android.hardware.camera2.CameraCharacteristics;
 import android.media.ImageReader;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -10,7 +9,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -19,10 +17,8 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
-
 import android.app.Fragment;
 import android.widget.TextView;
-
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Config;
@@ -36,8 +32,6 @@ import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
 import com.google.ar.core.examples.java.common.helpers.DepthSettings;
 import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
-import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
-import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
 import com.google.ar.core.examples.java.common.helpers.TapHelper;
 import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
 import com.google.ar.core.examples.java.common.rendering.BackgroundRenderer;
@@ -50,46 +44,37 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
-
 import java.io.IOException;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+/**
+ - container에 위치할 Fragment
+ - GLSurfaceView.Renderer : camera view -> depth 파악하기 위함
+ */
 public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     private static final String TAG = DepthFragment.class.getSimpleName();
-
-    // Rendering. The Renderers are created here, and initialized when the GL surface is created.
-    private GLSurfaceView surfaceView;
-
     private boolean installRequested;
+
+    private GLSurfaceView surfaceView;
+    private TextView textView; //distance 출력
     private Session session;
-    //private final SnackbarHelper messageSnackbarHelper = new SnackbarHelper();
-    private OnFrameListener onFrameListener;
+    private OnFrameListener onFrameListener; //CameraActivity로 frame 전송
+
     private DisplayRotationHelper displayRotationHelper;
     private TrackingStateHelper trackingStateHelper;
     private TapHelper tapHelper;
     private Activity activity;
-    private TextView textView;
-
+    //Renderer 초기화
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
     private final PlaneRenderer planeRenderer = new PlaneRenderer();
     private final PointCloudRenderer pointCloudRenderer = new PointCloudRenderer();
     private final Texture depthTexture = new Texture();
+
     private boolean calculateUVTransform = true;
-
-    private final DepthSettings depthSettings = new DepthSettings();
-
-    private static final String SEARCHING_PLANE_MESSAGE = "Searching for surfaces...";
-
-    private static final int MINIMUM_PREVIEW_SIZE = 320;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    private static final String FRAGMENT_DIALOG = "dialog";
 
+    private Integer sensorOrientation;
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);
@@ -97,24 +82,26 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
-    public interface ConnectionCallback{
-        void onPreviewSizeChosen(Size size, int cameraRotation);
-    }
-
-    public interface OnFrameListener{
-        void onFrameSet(Frame frame);
-    }
-
-    private Integer sensorOrientation;
     private Size previewSize;
-
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
-    private ImageReader previewReader;
     private final Size inputSize;
     private final int layout;
 
+    /**
+     * DepthFragment가 생성되면 onPreviewSizeChosen을 실행하여 preview 크기를 정함
+     */
+    public interface ConnectionCallback{
+        void onPreviewSizeChosen(Size size, int cameraRotation);
+    }
     private final ConnectionCallback depthCallback;
+
+    /**
+     * CameraActivity로 frame을 전송하기 위한 listener
+     */
+    public interface OnFrameListener{
+        void onFrameSet(Frame frame);
+    }
 
     private DepthFragment(
             final ConnectionCallback connectionCallback,
@@ -125,6 +112,13 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         this.inputSize = inputSize;
     }
 
+    /**
+     * DepthFragment 생성 시 호출
+     * @param callback previewSizeChosen
+     * @param layout camera_connection_fragment_tracking.xml
+     * @param inputSize 480w * 640h
+     * @return DepthFragment constructor
+     */
     public static DepthFragment newInstance(
             final ConnectionCallback callback,
             final int layout,
@@ -135,10 +129,10 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     @Override
     public void onAttach(Context context){
         super.onAttach(context);
-        if(context instanceof Activity){
+        if(context instanceof Activity){ //surfaceView 세팅하기 위한 것
             activity = (Activity) context;
         }
-        if(context instanceof OnFrameListener){
+        if(context instanceof OnFrameListener){ //listener생성
             onFrameListener = (OnFrameListener) context;
         }
     }
@@ -149,27 +143,22 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         //surfaceview 크기 조정
         int width = 0;
         int height = 0;
-        //CameraActivity에서 Bundle을 통해 보낸 width, height로 surface view 크기 지정
+        //CameraActivity에서 받은 휴대폰 화면 크기
         Bundle bundle = getArguments();
-
         if (bundle != null) {
             width = bundle.getInt("width");
             height = bundle.getInt("height");
         }
-        System.out.println("phoneWidth: " + width + " , phoneHeight: " + height);
-
+        //surfaceView 세팅
         GLSurfaceView surfaceView = (GLSurfaceView) mView.findViewById(R.id.surfaceview);
         android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(width, height);
-
-        installRequested = false;
         surfaceView.setLayoutParams(params);
         textView = mView.findViewById(R.id.textView);
         trackingStateHelper = new TrackingStateHelper(activity);
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ activity);
-
+        installRequested = false;
         tapHelper = new TapHelper(activity);
         surfaceView.setOnTouchListener(tapHelper);
-
         surfaceView.setPreserveEGLContextOnPause(true);
         surfaceView.setEGLContextClientVersion(2);
         surfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0); // Alpha used for plane blending.
@@ -194,7 +183,6 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     public void onResume(){
         super.onResume();
         startBackgroundThread();
-
         if (session == null) {
             Exception exception = null;
             String message = null;
@@ -206,14 +194,12 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
                     case INSTALLED:
                         break;
                 }
-
-                // ARCore requires camera permissions to operate. If we did not yet obtain runtime
-                // permission on Android M and above, now is a good time to ask the user for it.
+                //카메라 권한 확인
                 if (!CameraPermissionHelper.hasCameraPermission(activity)) {
                     CameraPermissionHelper.requestCameraPermission(activity);
                     return;
                 }
-                // Create the session.
+                //session 생성
                 session = new Session(/* context= */ activity);
                 Config config = session.getConfig();
                 if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -239,9 +225,7 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
                 message = "Failed to create AR session";
                 exception = e;
             }
-
             if (message != null) {
-                //messageSnackbarHelper.showError(activity, message);
                 Log.e(TAG, "Exception creating session", exception);
                 return;
             }
@@ -250,8 +234,6 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         try {
             session.resume();
         } catch (CameraNotAvailableException e) {
-            //messageSnackbarHelper.showError(activity, "Camera not available. Try restarting the app.");
-            Log.e(TAG, "restart!!!");
             session = null;
             return;
         }
@@ -292,7 +274,11 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         }
     }
 
-
+    /**
+     * opengl 화면 생성시 호출
+     * @param gl
+     * @param config
+     */
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -314,27 +300,34 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         }
     }
 
+    /**
+     * opengl 화면 크기 변경시 호출(회전 등)
+     * @param gl
+     * @param width
+     * @param height
+     */
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         displayRotationHelper.onSurfaceChanged(width, height);
         GLES20.glViewport(0, 0, width, height);
     }
 
+    /**
+     * camera -> 화면 불러와서 opengl에 그리고, object detection을 위해 cameraActivity에 frame전송
+     * @param gl
+     */
     @Override
     public void onDrawFrame(GL10 gl) {
         // Clear screen to notify driver it should not load any pixels from previous frame.
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-
         if (session == null) {
             return;
         }
         // Notify ARCore session that the view size changed so that the perspective matrix and
         // the video background can be properly adjusted.
         displayRotationHelper.updateSessionIfNeeded(session);
-
         try {
             session.setCameraTextureName(backgroundRenderer.getTextureId());
-
             // Obtain the current frame from ARSession. When the configuration is set to
             // UpdateMode.BLOCKING (it is by default), this will throttle the rendering to the
             // camera framerate.
@@ -347,22 +340,18 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
                 calculateUVTransform = false;
                 float[] transform = getTextureTransformMatrix(frame);
             }
-
             if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
                 depthTexture.updateWithDepthImageOnGlThread(frame);
             }
-
             // Handle one tap per frame.
             handleTap(frame, camera);
-
             onFrameListener.onFrameSet(frame);
 
-            //카메라 화면 보여주기
+            //카메라 화면 보여주기 : 지우면 카메라 화면 숨기기 가능!
             backgroundRenderer.draw(frame, false);
 
             // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
             trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
-
             // If not tracking, don't draw 3D objects, show tracking failure reason instead.
             if (camera.getTrackingState() == TrackingState.PAUSED) {
                 //messageSnackbarHelper.showMessage(
@@ -370,7 +359,6 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
                 Log.e(TAG, "no tracking!!!");
                 return;
             }
-
             // Get projection matrix.
             float[] projmtx = new float[16];
             camera.getProjectionMatrix(projmtx, 0, 0.1f, 100.0f);
@@ -431,7 +419,6 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
                 metaState
         );
 
-        //MotionEvent tap = tapHelper.poll();
         if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
             for (HitResult hit : frame.hitTest(tap)) {
                 System.out.println("-----------------------------");

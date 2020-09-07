@@ -25,20 +25,9 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
 import android.util.Size;
 import android.util.TypedValue;
-import android.view.Display;
-import android.view.MotionEvent;
-import android.view.Surface;
-import android.widget.TextView;
-
-import com.google.ar.core.Camera;
-import com.google.ar.core.Frame;
-import com.google.ar.core.HitResult;
-import com.google.ar.core.TrackingState;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,10 +38,6 @@ import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 import org.tensorflow.demo.R; // Explicit import needed for internal Google builds.
-import com.google.ar.core.examples.java.common.helpers.TapHelper;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -60,28 +45,23 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class DetectorActivity extends CameraActivity implements DepthFragment.OnFrameListener {
   private static final Logger LOGGER = new Logger();
-
+  //TF_OD_API 세팅
   private static final int TF_OD_API_INPUT_SIZE = 300;
   private static final String TF_OD_API_MODEL_FILE =
           "file:///android_asset/ssd_mobilenet_v1_android_export.pb";
   private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/coco_labels_list.txt";
 
-  // Which detection model to use: by default uses Tensorflow Object Detection API frozen
-  // checkpoints.  Optionally use legacy Multibox (trained using an older version of the API)
-  // or YOLO.
   private enum DetectorMode {
     TF_OD_API, MULTIBOX, YOLO;
   }
+
   private static final DetectorMode MODE = DetectorMode.TF_OD_API;
 
   // Minimum detection confidence to track a detection.
   private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.6f;
-  //private static final float MINIMUM_CONFIDENCE_MULTIBOX = 0.1f;
-  //private static final float MINIMUM_CONFIDENCE_YOLO = 0.25f;
-
   private static final boolean MAINTAIN_ASPECT = MODE == DetectorMode.TF_OD_API;
 
-  private static final Size DESIRED_PREVIEW_SIZE = new Size(480, 640);
+  private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
 
   private static final boolean SAVE_PREVIEW_BITMAP = false;
   private static final float TEXT_SIZE_DIP = 10;
@@ -103,16 +83,13 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
   private Matrix cropToFrameTransform;
 
   private MultiBoxTracker tracker;
-  //물체의 중앙점
-  public float middlePointX;
-  public float middlePointY;
 
   private byte[] luminanceCopy;
 
   private BorderedText borderedText;
+
   @Override
   public void onPreviewSizeChosen(final Size size, final int rotation) {
-    LOGGER.i("onpreviewsizechosen called!!!");
     final float textSizePx =
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, getResources().getDisplayMetrics());
@@ -121,7 +98,7 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
     int cropSize = TF_OD_API_INPUT_SIZE;
     tracker = new MultiBoxTracker(this);
-
+    //TF_OD_API detector로 세팅
     try {
       detector = TensorFlowObjectDetectionAPIModel.create(
               getAssets(), TF_OD_API_MODEL_FILE, TF_OD_API_LABELS_FILE, TF_OD_API_INPUT_SIZE);
@@ -132,10 +109,10 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
     previewWidth = size.getWidth();
     previewHeight = size.getHeight();
-
     sensorOrientation = rotation - getScreenOrientation();
-    LOGGER.i("Camera orientation relative to screen canvas: %d", sensorOrientation); //90
+    LOGGER.i("Camera orientation relative to screen canvas: %d", sensorOrientation); //수직일 때 90
     LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
+
     rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
     croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Config.ARGB_8888);
 
@@ -153,53 +130,7 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
         new DrawCallback() {
           @Override
           public void drawCallback(final Canvas canvas) {
-            tracker.draw(canvas); //네모박스 !!!
-            if (isDebug()) {
-              tracker.drawDebug(canvas);
-            }
-          }
-        });
-
-    addCallback(
-        new DrawCallback() {
-          @Override
-          public void drawCallback(final Canvas canvas) {
-            if (!isDebug()) {
-              return;
-            }
-            final Bitmap copy = cropCopyBitmap;
-            if (copy == null) {
-              return;
-            }
-
-            final int backgroundColor = Color.argb(100, 0, 0, 0);
-            canvas.drawColor(backgroundColor);
-
-            final Matrix matrix = new Matrix();
-            final float scaleFactor = 2;
-            matrix.postScale(scaleFactor, scaleFactor);
-            matrix.postTranslate(
-                canvas.getWidth() - copy.getWidth() * scaleFactor,
-                canvas.getHeight() - copy.getHeight() * scaleFactor);
-            canvas.drawBitmap(copy, matrix, new Paint());
-
-            final Vector<String> lines = new Vector<String>();
-            if (detector != null) {
-              final String statString = detector.getStatString();
-              final String[] statLines = statString.split("\n");
-              for (final String line : statLines) {
-                lines.add(line);
-              }
-            }
-            lines.add("");
-
-            lines.add("Frame: " + previewWidth + "x" + previewHeight);
-            lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
-            lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
-            lines.add("Rotation: " + sensorOrientation);
-            lines.add("Inference time: " + lastProcessingTimeMs + "ms");
-
-            borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines);
+            tracker.draw(canvas);
           }
         });
   }
@@ -208,7 +139,6 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
   @Override
   protected void processImage() {
-    LOGGER.i("processing image !!!");
     ++timestamp;
     final long currTimestamp = timestamp;
     byte[] originalLuminance = getLuminance();
@@ -267,10 +197,8 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
 
             for (final Classifier.Recognition result : results) {
               final RectF location = result.getLocation();
-              LOGGER.i("found??? : " + result);
               if (location != null && result.getConfidence() >= minimumConfidence) {
                 canvas.drawRect(location, paint);
-
                 cropToFrameTransform.mapRect(location);
                 result.setLocation(location);
                 mappedRecognitions.add(result);
@@ -280,19 +208,11 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
             tracker.trackResults(mappedRecognitions, luminanceCopy, currTimestamp);
             trackingOverlay.postInvalidate();
 
-            requestRender();
+            //requestRender();
             computingDetection = false;
           }
         });
   }
-
-  /*
-  @Override
-  protected void setDistance(float distance){
-    TextView textView = findViewById(R.id.textView);
-    textView.setText("distance : " + distance);
-  }
-  */
 
   @Override
   protected int getLayoutId() {
@@ -302,10 +222,5 @@ public class DetectorActivity extends CameraActivity implements DepthFragment.On
   @Override
   protected Size getDesiredPreviewFrameSize() {
     return DESIRED_PREVIEW_SIZE;
-  }
-
-  @Override
-  public void onSetDebug(final boolean debug) {
-    detector.enableStatLogging(debug);
   }
 }
