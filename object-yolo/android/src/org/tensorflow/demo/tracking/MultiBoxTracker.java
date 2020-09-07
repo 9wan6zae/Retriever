@@ -204,9 +204,11 @@ public class MultiBoxTracker {
       //전역변수 설정
       final GlobalVariable globalVariable = (GlobalVariable) context.getApplicationContext();
 
-      String middlePoint = "distance:" + globalVariable.getDistance();
+      String middlePoint = "(" + middlePointX + ", " + middlePointY + ")";
+      String distance = "Distance: " + globalVariable.getDistance();
       //중앙점에 표시할 문자열
-      borderedTextMiddlePoint.drawText(canvas, middlePointX, middlePointY, middlePoint);
+      borderedText.drawText(canvas, middlePointX, middlePointY, middlePoint);
+      borderedText.drawText(canvas, middlePointX, middlePointY+60, distance);
 
       //중앙점 전역변수에 저장
       globalVariable.setMiddlePointX(middlePointX);
