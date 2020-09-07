@@ -18,11 +18,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-      <org.tensorflow.demo.AutoFitTextureView
-          android:id="@+id/texture"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          tools:visibility="visible" />
+      <android.opengl.GLSurfaceView
+          android:id="@+id/surfaceview"
+          android:layout_width="fill_parent"
+          android:layout_height="fill_parent"
+          android:layout_gravity="top" />
 
       <org.tensorflow.demo.OverlayView
           android:id="@+id/tracking_overlay"
@@ -33,4 +33,12 @@
           android:id="@+id/debug_overlay"
           android:layout_width="match_parent"
           android:layout_height="match_parent"/>
+
+      <TextView
+          android:id="@+id/textView"
+          android:layout_width="match_parent"
+          android:layout_height="46dp"
+          android:text="TextView"
+          android:textStyle="bold"
+          tools:text="distance" />
 </FrameLayout>

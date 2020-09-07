@@ -6,6 +6,8 @@
 .gradle/
 build/
 
+app/gradleBuild
+
 # User configuration.
 local.properties
 

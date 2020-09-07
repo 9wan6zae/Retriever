@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import org.tensorflow.demo.Classifier.Recognition;
+import org.tensorflow.demo.GlobalVariable;
 import org.tensorflow.demo.env.BorderedText;
 import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
@@ -85,6 +86,10 @@ public class MultiBoxTracker {
 
   private final float textSizePx;
   private final BorderedText borderedText;
+  private final BorderedText borderedTextMiddlePoint;
+
+  private float middlePointX;
+  private float middlePointY;
 
   private Matrix frameToCanvasMatrix;
 
@@ -111,6 +116,7 @@ public class MultiBoxTracker {
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
     borderedText = new BorderedText(textSizePx);
+    borderedTextMiddlePoint = new BorderedText(textSizePx);
   }
 
   private Matrix getFrameToCanvasMatrix() {
@@ -189,7 +195,24 @@ public class MultiBoxTracker {
           !TextUtils.isEmpty(recognition.title)
               ? String.format("%s %.2f", recognition.title, recognition.detectionConfidence)
               : String.format("%.2f", recognition.detectionConfidence);
+      logger.i("***found : " + recognition.title);
       borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, labelString);
+
+      middlePointX = trackedPos.left + trackedPos.width() / 2;
+      middlePointY = trackedPos.top + trackedPos.height() / 2;
+      canvas.drawPoint(middlePointX, middlePointY, boxPaint);
+      //전역변수 설정
+      final GlobalVariable globalVariable = (GlobalVariable) context.getApplicationContext();
+
+      String middlePoint = "(" + middlePointX + ", " + middlePointY + ")";
+      String distance = "Distance: " + globalVariable.getDistance();
+      //중앙점에 표시할 문자열
+      borderedText.drawText(canvas, middlePointX, middlePointY, middlePoint);
+      borderedText.drawText(canvas, middlePointX, middlePointY+60, distance);
+
+      //중앙점 전역변수에 저장
+      globalVariable.setMiddlePointX(middlePointX);
+      globalVariable.setMiddlePointY(middlePointY);
     }
   }
 
@@ -216,7 +239,7 @@ public class MultiBoxTracker {
         String message =
             "Object tracking support not found. "
                 + "See tensorflow/examples/android/README.md for details.";
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        //Toast.makeText(context, message, Toast.LENGTH_LONG).show();
         logger.e(message);
       }
     }
