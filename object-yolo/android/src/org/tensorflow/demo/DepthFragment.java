@@ -1,7 +1,10 @@
 package org.tensorflow.demo;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.ImageReader;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -9,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.SystemClock;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -45,16 +49,32 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
+import java.util.Locale;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+import android.speech.tts.TextToSpeech;
+import android.widget.Toast;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import org.w3c.dom.Text;
+
+import static android.speech.tts.TextToSpeech.ERROR;
 
 /**
  - container에 위치할 Fragment
  - GLSurfaceView.Renderer : camera view -> depth 파악하기 위함
  */
-public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
+public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, TextToSpeech.OnInitListener{
     private static final String TAG = DepthFragment.class.getSimpleName();
     private boolean installRequested;
+
+    private TextToSpeech tts;
+    private boolean isSpeaking = false;
+    private String direction;
+    private int phoneWidth;
+    private int phoneHeight;
 
     private GLSurfaceView surfaceView;
     private TextView textView; //distance 출력
@@ -87,6 +107,27 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     private Handler backgroundHandler;
     private final Size inputSize;
     private final int layout;
+
+    @Override
+    public void onInit(int status) {
+        if(status != ERROR) {
+            // 언어를 선택한다.
+            tts.setLanguage(Locale.KOREAN);
+            tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                @Override
+                public void onStart(String utteranceId) { }
+                //tts가 완료가 되었을 때
+                @Override
+                public void onDone(String utteranceId) {
+                    System.out.println("TTS Complete!!");
+                    isSpeaking = false;
+                }
+
+                @Override
+                public void onError(String utteranceId) { }
+            });
+        }
+    }
 
     /**
      * DepthFragment가 생성되면 onPreviewSizeChosen을 실행하여 preview 크기를 정함
@@ -141,17 +182,20 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
         View mView = inflater.inflate(layout, container, false);
         //surfaceview 크기 조정
-        int width = 0;
-        int height = 0;
+        phoneWidth = 0;
+        phoneHeight = 0;
         //CameraActivity에서 받은 휴대폰 화면 크기
         Bundle bundle = getArguments();
         if (bundle != null) {
-            width = bundle.getInt("width");
-            height = bundle.getInt("height");
+            phoneWidth = bundle.getInt("width");
+            phoneHeight = bundle.getInt("height");
         }
+
+        tts = new TextToSpeech(getActivity(), this);
+
         //surfaceView 세팅
         GLSurfaceView surfaceView = (GLSurfaceView) mView.findViewById(R.id.surfaceview);
-        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(width, height);
+        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(phoneWidth, phoneHeight);
         surfaceView.setLayoutParams(params);
         textView = mView.findViewById(R.id.textView);
         trackingStateHelper = new TrackingStateHelper(activity);
@@ -258,6 +302,20 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
             displayRotationHelper.onPause();
             surfaceView.onPause();
             session.pause();
+        }
+    }
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(tts != null){
+            tts.stop();
+            tts.shutdown();
+            tts = null;
         }
     }
 
@@ -409,6 +467,22 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
         //이벤트 발생 시간
         long eventTime = SystemClock.uptimeMillis() + 100;
         int metaState = 0;
+
+        //스마트폰 화면의 폭의 중앙점
+        int middlePhoneWidth = phoneWidth / 2;
+        //폭의 중앙점에 의해 방향을 결정
+        int boundaryDirection = 150;
+        float saftDistance = 1.0f;
+        if (middlePhoneWidth + boundaryDirection < objectPointX) {
+            direction = "오른쪽";
+        }
+        else if (middlePhoneWidth - boundaryDirection > objectPointX) {
+            direction = "왼쪽";
+        }
+        else {
+            direction = "전방";
+        }
+
         //위의 두 시간을 이용해서 터치 이벤트 발생, 터치한 지점은 중앙점
         MotionEvent tap = MotionEvent.obtain(
                 downTime,
@@ -421,12 +495,23 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer{
 
         if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
             for (HitResult hit : frame.hitTest(tap)) {
+                float distance = hit.getDistance();
                 System.out.println("-----------------------------");
-                System.out.println("distance: " + hit.getDistance());
+                System.out.println("distance: " + distance);
                 System.out.println("-----------------------------");
                 String position = "x: " + tap.getX() + ", y: " + tap.getY();
-                textView.setText(position + "\n" + hit.getDistance());
-                globalVariable.setDistance(hit.getDistance());
+                textView.setText(position + "\n" + distance);
+                globalVariable.setDistance(distance);
+                String distanceAlert = "거리는 " + distance + "입니다.";
+                String Alert = direction + "에 물체가 있습니다";
+                //말을 하고 있지 않다면
+                if(!isSpeaking) {
+                    if( distance <= saftDistance) {
+                        //TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED는 tts가 완료되는 시점을 알려주는 역할을 함. onInit() 참고
+                        tts.speak(Alert, TextToSpeech.QUEUE_FLUSH, null, TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED);
+                        isSpeaking = true;
+                    }
+                }
             }
         }
     }
