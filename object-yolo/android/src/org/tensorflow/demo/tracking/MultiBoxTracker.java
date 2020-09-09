@@ -213,6 +213,8 @@ public class MultiBoxTracker {
       //중앙점 전역변수에 저장
       globalVariable.setMiddlePointX(middlePointX);
       globalVariable.setMiddlePointY(middlePointY);
+      globalVariable.setLabel(recognition.title);
+      break;
     }
   }
 

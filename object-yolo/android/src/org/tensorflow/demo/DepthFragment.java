@@ -16,6 +16,7 @@ import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
@@ -190,14 +191,18 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
             phoneWidth = bundle.getInt("width");
             phoneHeight = bundle.getInt("height");
         }
+        int surfacePhoneHeight = phoneWidth * 4/3;
+        int textViewHeight = phoneHeight - surfacePhoneHeight;
 
         tts = new TextToSpeech(getActivity(), this);
 
         //surfaceView 세팅
         GLSurfaceView surfaceView = (GLSurfaceView) mView.findViewById(R.id.surfaceview);
-        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(phoneWidth, phoneHeight);
+        android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(phoneWidth, surfacePhoneHeight);
         surfaceView.setLayoutParams(params);
         textView = mView.findViewById(R.id.textView);
+        android.widget.FrameLayout.LayoutParams textViewSize = new android.widget.FrameLayout.LayoutParams(phoneWidth, textViewHeight, Gravity.BOTTOM);
+        textView.setLayoutParams(textViewSize);
         trackingStateHelper = new TrackingStateHelper(activity);
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ activity);
         installRequested = false;
@@ -456,12 +461,24 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
         }
     }
 
+    private String setAlertMessage(String label) {
+        String laptop = "laptop";
+        String alertMessage = "장애물이 있습니다.";
+        if (label.compareTo("laptop")==0) {
+            alertMessage = "노트북이 있습니다.";
+        }
+        return alertMessage;
+    };
+
     // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
     private void handleTap(Frame frame, Camera camera) {
         final GlobalVariable globalVariable = (GlobalVariable) activity.getApplicationContext();
         //전역변수에서 중앙점 가져오기
         float objectPointX = globalVariable.getMiddlePointX();
         float objectPointY = globalVariable.getMiddlePointY();
+        //전역변수에서 라벨 가져오기
+        String objectLabel = globalVariable.getLabel();
+        //String alertMessage = setAlertMessage(objectLabel);
         //누른 시간
         long downTime = SystemClock.uptimeMillis();
         //이벤트 발생 시간
@@ -500,10 +517,10 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
                 System.out.println("distance: " + distance);
                 System.out.println("-----------------------------");
                 String position = "x: " + tap.getX() + ", y: " + tap.getY();
-                textView.setText(position + "\n" + distance);
                 globalVariable.setDistance(distance);
                 String distanceAlert = "거리는 " + distance + "입니다.";
-                String Alert = direction + "에 물체가 있습니다";
+                String Alert = direction + "에 " + objectLabel + "이 있습니다.";
+                textView.setText(Alert);
                 //말을 하고 있지 않다면
                 if(!isSpeaking) {
                     if( distance <= saftDistance) {

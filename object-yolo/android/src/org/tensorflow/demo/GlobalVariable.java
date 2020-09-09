@@ -6,6 +6,7 @@ public class GlobalVariable extends Application {
     private float middlePointX;
     private float middlePointY;
     private float distance;
+    private String label;
 
     public float getMiddlePointX() {
         return middlePointX;
@@ -19,6 +20,10 @@ public class GlobalVariable extends Application {
         return distance;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
     public void setMiddlePointX(float middlePointX) {
         this.middlePointX = middlePointX;
     }
@@ -29,5 +34,9 @@ public class GlobalVariable extends Application {
 
     public void setDistance(float distance) {
         this.distance = distance;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
     }
 }

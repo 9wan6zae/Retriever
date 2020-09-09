@@ -17,7 +17,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
       <android.opengl.GLSurfaceView
           android:id="@+id/surfaceview"
           android:layout_width="fill_parent"
@@ -37,8 +36,13 @@
       <TextView
           android:id="@+id/textView"
           android:layout_width="match_parent"
-          android:layout_height="46dp"
-          android:text="TextView"
+          android:layout_height="wrap_content"
+          android:layout_gravity="bottom"
+          android:gravity="center"
+          android:text="거리측정 중입니다!"
+          android:textAlignment="center"
+          android:textColor="#FFFFFF"
+          android:textSize="24sp"
           android:textStyle="bold"
           tools:text="distance" />
 </FrameLayout>
