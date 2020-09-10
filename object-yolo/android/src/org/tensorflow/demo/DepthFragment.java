@@ -464,11 +464,13 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
     private String setAlertMessage(String label) {
         String laptop = "laptop";
         String alertMessage = "장애물이 있습니다.";
-        if (label.compareTo("laptop")==0) {
+        if (label.equals("laptop")) {
             alertMessage = "노트북이 있습니다.";
         }
         return alertMessage;
     };
+
+    String alertMessage;
 
     // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
     private void handleTap(Frame frame, Camera camera) {
@@ -478,7 +480,9 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
         float objectPointY = globalVariable.getMiddlePointY();
         //전역변수에서 라벨 가져오기
         String objectLabel = globalVariable.getLabel();
-        //String alertMessage = setAlertMessage(objectLabel);
+        if(objectLabel != null){
+            alertMessage = setAlertMessage(objectLabel);
+        }
         //누른 시간
         long downTime = SystemClock.uptimeMillis();
         //이벤트 발생 시간
@@ -519,11 +523,15 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
                 String position = "x: " + tap.getX() + ", y: " + tap.getY();
                 globalVariable.setDistance(distance);
                 String distanceAlert = "거리는 " + distance + "입니다.";
-                String Alert = direction + "에 " + objectLabel + "이 있습니다.";
-                textView.setText(Alert);
+                //String Alert = direction + "에 " + objectLabel + "이 있습니다.";
+                String Alert = null;
+                if(alertMessage != null){
+                    Alert = direction + "에 " + alertMessage;
+                    textView.setText(Alert);
+                }
                 //말을 하고 있지 않다면
                 if(!isSpeaking) {
-                    if( distance <= saftDistance) {
+                    if( distance <= saftDistance && Alert != null) {
                         //TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED는 tts가 완료되는 시점을 알려주는 역할을 함. onInit() 참고
                         tts.speak(Alert, TextToSpeech.QUEUE_FLUSH, null, TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED);
                         isSpeaking = true;
