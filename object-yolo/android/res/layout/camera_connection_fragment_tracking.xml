@@ -39,6 +39,7 @@
           android:layout_height="wrap_content"
           android:layout_gravity="bottom"
           android:gravity="center"
+          android:fontFamily="@font/nixgonm"
           android:text="거리측정 중입니다!"
           android:textAlignment="center"
           android:textColor="#E0B567"
