@@ -452,8 +452,8 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
             }
 
             //평면 보여주기(삼각형 그리드)
-            planeRenderer.drawPlanes(
-                    session.getAllTrackables(Plane.class), camera.getDisplayOrientedPose(), projmtx);
+//            planeRenderer.drawPlanes(
+//                    session.getAllTrackables(Plane.class), camera.getDisplayOrientedPose(), projmtx);
 
         } catch (Throwable t) {
             // Avoid crashing the application due to unhandled exceptions.

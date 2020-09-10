@@ -41,7 +41,7 @@
           android:gravity="center"
           android:text="거리측정 중입니다!"
           android:textAlignment="center"
-          android:textColor="#FFFFFF"
+          android:textColor="#E0B567"
           android:textSize="24sp"
           android:textStyle="bold"
           tools:text="distance" />

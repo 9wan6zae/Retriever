@@ -60,7 +60,7 @@ public class MultiBoxTracker {
   private static final float MIN_CORRELATION = 0.3f;
 
   private static final int[] COLORS = {
-    Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.WHITE,
+    Color.argb(255, 225, 182, 102), Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.WHITE,
     Color.parseColor("#55FF55"), Color.parseColor("#FFA500"), Color.parseColor("#FF8888"),
     Color.parseColor("#AAAAFF"), Color.parseColor("#FFFFAA"), Color.parseColor("#55AAAA"),
     Color.parseColor("#AA33AA"), Color.parseColor("#0D0068")
@@ -205,10 +205,9 @@ public class MultiBoxTracker {
       final GlobalVariable globalVariable = (GlobalVariable) context.getApplicationContext();
 
       String middlePoint = "(" + middlePointX + ", " + middlePointY + ")";
-      String distance = "Distance: " + globalVariable.getDistance();
+      String distance = globalVariable.getDistance() + "m";
       //중앙점에 표시할 문자열
-      borderedText.drawText(canvas, middlePointX, middlePointY, middlePoint);
-      borderedText.drawText(canvas, middlePointX, middlePointY+60, distance);
+      borderedText.drawText(canvas, middlePointX, middlePointY, distance);
 
       //중앙점 전역변수에 저장
       globalVariable.setMiddlePointX(middlePointX);
