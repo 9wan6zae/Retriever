@@ -462,10 +462,12 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
     }
 
     private String setAlertMessage(String label) {
-        String laptop = "laptop";
-        String alertMessage = "장애물이 있습니다.";
-        if (label.equals("laptop")) {
-            alertMessage = "노트북이 있습니다.";
+        String alertMessage = "물체가 있습니다.";
+        if (label.equals("person")) {
+            alertMessage = "사람이 있습니다.";
+        }
+        else if (label.equals("car")) {
+            alertMessage = "자동차가 있습니다.";
         }
         return alertMessage;
     };
