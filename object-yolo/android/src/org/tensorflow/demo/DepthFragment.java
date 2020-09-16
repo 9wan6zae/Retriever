@@ -495,7 +495,7 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
         int middlePhoneWidth = phoneWidth / 2;
         //폭의 중앙점에 의해 방향을 결정
         int boundaryDirection = 150;
-        float saftDistance = 1.0f;
+        float saftDistance = 2.5f;
         if (middlePhoneWidth + boundaryDirection < objectPointX) {
             direction = "오른쪽";
         }
@@ -524,18 +524,16 @@ public class DepthFragment extends Fragment implements GLSurfaceView.Renderer, T
                 System.out.println("-----------------------------");
                 String position = "x: " + tap.getX() + ", y: " + tap.getY();
                 globalVariable.setDistance(distance);
-                String distanceAlert = "거리는 " + distance + "입니다.";
-                //String Alert = direction + "에 " + objectLabel + "이 있습니다.";
-                String Alert = null;
+                String distanceAlert = null;
                 if(alertMessage != null){
-                    Alert = direction + "에 " + alertMessage;
-                    textView.setText(Alert);
+                    distanceAlert = direction + "에 " + alertMessage;
+                    textView.setText(distanceAlert);
                 }
                 //말을 하고 있지 않다면
                 if(!isSpeaking) {
-                    if( distance <= saftDistance && Alert != null) {
+                    if( distance <= saftDistance && distanceAlert != null) {
                         //TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED는 tts가 완료되는 시점을 알려주는 역할을 함. onInit() 참고
-                        tts.speak(Alert, TextToSpeech.QUEUE_FLUSH, null, TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED);
+                        tts.speak(distanceAlert, TextToSpeech.QUEUE_FLUSH, null, TextToSpeech.ACTION_TTS_QUEUE_PROCESSING_COMPLETED);
                         isSpeaking = true;
                     }
                 }
